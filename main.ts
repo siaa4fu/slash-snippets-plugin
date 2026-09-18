@@ -44,7 +44,7 @@ export interface SuggestionObject {
 
 export default class SlashSnippetPlugin extends Plugin {
 	settings: SlashSnippetSettings;
-	selectedText: string;
+	selectedText = '';
 	snippetFiles: TFile[] = [];
 
 	async onload() {
@@ -58,6 +58,7 @@ export default class SlashSnippetPlugin extends Plugin {
 		const mySelectionListener = EditorView.updateListener.of((update: ViewUpdate) => {
 			if (!update.docChanged) return;
 
+			let selectionCaptured = false;
 			for (const tr of update.transactions) {
 				const changes = tr.changes;
 				changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
@@ -66,10 +67,15 @@ export default class SlashSnippetPlugin extends Plugin {
 
 					// update selected text
 					if (deletedText.length > 0 && insertedText === this.settings.slashTrigger) {
+						selectionCaptured = true;
 						this.selectedText = deletedText;
 					}
 				});
+			}
 
+			// Clear selected text after non-slash edits
+			if (!selectionCaptured) {
+				this.selectedText = '';
 			}
 		});
 		this.registerEditorExtension(mySelectionListener);
