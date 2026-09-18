@@ -26,8 +26,12 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 		const relativePath = filePath.startsWith(prefix)
 			? filePath.slice(prefix.length)
 			: filePath;
+		const extension = file.extension;
+		const extensionWithDot = extension ? `.${extension}` : "";
 
-		return relativePath.replace(/\.[^/.]+$/, "");
+		return extensionWithDot && relativePath.endsWith(extensionWithDot)
+			? relativePath.slice(0, -extensionWithDot.length)
+			: relativePath;
 	}
 
 	getAllSnippets(query: string) {
