@@ -12,7 +12,28 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 	private plugin: SlashSnippetPlugin;
 	private DEFAULT_SCORE = 1;
 	private START_WITH_SCORE = 2;
+	private activeTriggerStart: number | null = null;
 
+	private getSnippetName(file: TFile): string {
+		if (!this.plugin.settings.relativePathSearch) {
+			return file.basename;
+		}
+
+		const snippetPath = this.plugin.settings.snippetPath
+			.replace(/\\/g, "/")
+			.replace(/^\/+|\/+$/g, "");
+		const filePath = file.path.replace(/\\/g, "/");
+		const prefix = snippetPath ? `${snippetPath}/` : "";
+		const relativePath = filePath.startsWith(prefix)
+			? filePath.slice(prefix.length)
+			: filePath;
+		const extension = file.extension;
+		const extensionWithDot = extension ? `.${extension}` : "";
+
+		return extensionWithDot && relativePath.endsWith(extensionWithDot)
+			? relativePath.slice(0, -extensionWithDot.length)
+			: relativePath;
+	}
 
 	getAllSnippets(query: string) {
 		if (query.startsWith(" ")) {
@@ -22,7 +43,6 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 		// if nothing is query yet
 		if (query == "") {
 			return this.getLastUsedSnippetFiles();
-
 		}
 
 		// search rank
@@ -30,12 +50,13 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 
 		for (let i = 0; i < this.plugin.snippetFiles.length; i++) {
 			const file = this.plugin.snippetFiles[i];
+			const snippetName = this.getSnippetName(file);
 			let score = 0;
 
 			if (this.plugin.settings.fuzzySearch) {
-				let positions = this.fuzzyMatch(file.name, query);
-				// if fuzzy math start with query then have higher score match
-				if (file.name.startsWith(query)) {
+				let positions = this.fuzzyMatch(snippetName, query);
+				// if fuzzy match starts with query then have higher score
+				if (snippetName.startsWith(query)) {
 					score = this.START_WITH_SCORE;
 				} else {
 					score = this.DEFAULT_SCORE;
@@ -50,7 +71,7 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 				}
 
 			} else {
-				if (file.name.toLowerCase().contains(query.toLowerCase())) {
+				if (snippetName.toLowerCase().contains(query.toLowerCase())) {
 					score = this.DEFAULT_SCORE;
 					snippetFiles.push({
 						filePath: file.path,
@@ -108,23 +129,44 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 		editor: Editor,
 		file: TFile | null
 	): EditorSuggestTriggerInfo | null {
-		const currentLine = editor.getLine(cursor.line).slice(0, cursor.ch);
+		const textBeforeCursor = editor.getLine(cursor.line).slice(0, cursor.ch);
+		const trigger = this.plugin.settings.slashTrigger;
 
-		if (!currentLine.contains(this.plugin.settings.slashTrigger)) {
-			return null;
+		// keep the existing trigger active while editing its query
+		if (
+			this.activeTriggerStart !== null &&
+			this.activeTriggerStart < cursor.ch &&
+			textBeforeCursor[this.activeTriggerStart] === trigger
+		) {
+			return {
+				start: {
+					...cursor,
+					ch: this.activeTriggerStart
+				},
+				end: cursor,
+				query: textBeforeCursor.slice(this.activeTriggerStart + 1)
+			};
 		}
 
-		const queryStart = currentLine.lastIndexOf(this.plugin.settings.slashTrigger);
-		const query = currentLine.slice(queryStart + 1, currentLine.length);
-		return {
-			start: {
-				...cursor,
-				ch: queryStart,
-			},
-			end: cursor,
-			query: query
-		};
+		this.activeTriggerStart = null;
 
+		// start a new trigger only when the trigger character was just entered
+		if (
+			cursor.ch > 0 &&
+			textBeforeCursor[cursor.ch - 1] === trigger
+		) {
+			this.activeTriggerStart = cursor.ch - 1;
+			return {
+				start: {
+					...cursor,
+					ch: this.activeTriggerStart
+				},
+				end: cursor,
+				query: ""
+			};
+		}
+
+		return null;
 	}
 
 	private removeFrontmatter(content: string) {
@@ -193,6 +235,11 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 		this.close();
 	}
 
+	public close(): void {
+		this.activeTriggerStart = null;
+		super.close();
+	}
+
 	getLastUsedSnippetFiles(): SuggestionObject[] {
 		const snippets: SuggestionObject[] = [];
 
@@ -232,14 +279,15 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 		const fileContent = await this.plugin.app.vault.cachedRead(file);
 
 		const pos = suggestion.positions;
+		const snippetName = this.getSnippetName(file);
 
 		// highlight match
 		if (this.plugin.settings.highlight && pos) {
 			const title = el.createEl("div");
-			title.innerHTML = this.buildHighlighted(file.basename, pos);
+			title.innerHTML = this.buildHighlighted(snippetName, pos);
 
 		} else {
-			el.createEl("div", {text: file.basename});
+			el.createEl("div", {text: snippetName});
 		}
 
 		// show path

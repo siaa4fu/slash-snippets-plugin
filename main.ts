@@ -11,6 +11,7 @@ interface SlashSnippetSettings {
 	showPath: boolean;
 	showFileContent: boolean;
 	snippetPath: string;
+	relativePathSearch: boolean;
 	ignoreProperties: boolean;
 	templaterSupport: boolean;
 	textSelectionString: string;
@@ -27,6 +28,7 @@ const DEFAULT_SETTINGS: SlashSnippetSettings = {
 	showPath: false,
 	showFileContent: false,
 	snippetPath: "Snippets",
+	relativePathSearch: false,
 	ignoreProperties: true,
 	templaterSupport: true,
 	textSelectionString: "%%textSelection%%",
@@ -157,4 +159,3 @@ export default class SlashSnippetPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 }
-
