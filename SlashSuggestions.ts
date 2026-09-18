@@ -217,13 +217,12 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 				line: this.context?.start.line,
 				ch: this.context?.start.ch + cursorTextPos
 			});
-		} else if(textSelectionPos >= 0){
+		} else if (textSelectionPos >= 0) {
 			this.context?.editor.setCursor({
 				line: this.context?.start.line,
 				ch: this.context?.start.ch + textSelectionPos
 			});
 		}
-
 
 		// run templater
 		if (this.plugin.settings.templaterSupport) {
