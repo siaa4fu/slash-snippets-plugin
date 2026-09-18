@@ -15,7 +15,7 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 
 	private getSnippetName(file: TFile): string {
 		if (!this.plugin.settings.relativePathSearch) {
-			return file.name;
+			return file.basename;
 		}
 
 		const snippetPath = this.plugin.settings.snippetPath
