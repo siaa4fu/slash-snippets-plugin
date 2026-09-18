@@ -76,12 +76,11 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 
 		while (t < text.length && q < query.length) {
 			if (text[t] === query[q]) {
-				q++
+				q++;
 				if (this.plugin.settings.highlight) {
 					positions.push(t);
 				}
 			}
-			if (text[t] === query[q]) q++;
 			t++;
 		}
 
