@@ -153,7 +153,7 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 		// cursor position hop
 		const cursorTextPos = snippetContent.indexOf(this.plugin.settings.cursorPositionString);
 		// remove cursor text
-		if (cursorTextPos) {
+		if (cursorTextPos >= 0) {
 			snippetContent = snippetContent.replace(this.plugin.settings.cursorPositionString, "")
 		}
 
@@ -171,12 +171,12 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 			this.context.end
 		);
 
-		if (cursorTextPos && cursorTextPos >0) {
+		if (cursorTextPos >= 0) {
 			this.context?.editor.setCursor({
 				line: this.context?.start.line,
 				ch: this.context?.start.ch + cursorTextPos
 			});
-		}else if(textSelectionPos){
+		} else if(textSelectionPos >= 0){
 			this.context?.editor.setCursor({
 				line: this.context?.start.line,
 				ch: this.context?.start.ch + textSelectionPos
