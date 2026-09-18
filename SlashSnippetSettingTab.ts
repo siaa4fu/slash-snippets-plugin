@@ -74,7 +74,7 @@ export default class SlashSnippetSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Show snippet content")
 			.addToggle((enable) => {
-					enable
+				enable
 					.setValue(this.plugin.settings.showFileContent)
 					.onChange(async (value) => {
 						this.plugin.settings.showFileContent = value;
