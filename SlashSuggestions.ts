@@ -13,6 +13,22 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 	private DEFAULT_SCORE = 1;
 	private START_WITH_SCORE = 2;
 
+	private getSnippetName(file: TFile): string {
+		if (!this.plugin.settings.relativePathSearch) {
+			return file.name;
+		}
+
+		const snippetPath = this.plugin.settings.snippetPath
+			.replace(/\\/g, "/")
+			.replace(/^\/+|\/+$/g, "");
+		const filePath = file.path.replace(/\\/g, "/");
+		const prefix = snippetPath ? `${snippetPath}/` : "";
+		const relativePath = filePath.startsWith(prefix)
+			? filePath.slice(prefix.length)
+			: filePath;
+
+		return relativePath.replace(/\.[^/.]+$/, "");
+	}
 
 	getAllSnippets(query: string) {
 		if (query.startsWith(" ")) {
@@ -22,7 +38,6 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 		// if nothing is query yet
 		if (query == "") {
 			return this.getLastUsedSnippetFiles();
-
 		}
 
 		// search rank
@@ -30,12 +45,13 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 
 		for (let i = 0; i < this.plugin.snippetFiles.length; i++) {
 			const file = this.plugin.snippetFiles[i];
+			const snippetName = this.getSnippetName(file);
 			let score = 0;
 
 			if (this.plugin.settings.fuzzySearch) {
-				let positions = this.fuzzyMatch(file.name, query);
-				// if fuzzy math start with query then have higher score match
-				if (file.name.startsWith(query)) {
+				let positions = this.fuzzyMatch(snippetName, query);
+				// if fuzzy match starts with query then have higher score
+				if (snippetName.startsWith(query)) {
 					score = this.START_WITH_SCORE;
 				} else {
 					score = this.DEFAULT_SCORE;
@@ -50,7 +66,7 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 				}
 
 			} else {
-				if (file.name.toLowerCase().contains(query.toLowerCase())) {
+				if (snippetName.toLowerCase().contains(query.toLowerCase())) {
 					score = this.DEFAULT_SCORE;
 					snippetFiles.push({
 						filePath: file.path,
@@ -233,14 +249,15 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 		const fileContent = await this.plugin.app.vault.cachedRead(file);
 
 		const pos = suggestion.positions;
+		const snippetName = this.getSnippetName(file);
 
 		// highlight match
 		if (this.plugin.settings.highlight && pos) {
 			const title = el.createEl("div");
-			title.innerHTML = this.buildHighlighted(file.basename, pos);
+			title.innerHTML = this.buildHighlighted(snippetName, pos);
 
 		} else {
-			el.createEl("div", {text: file.basename});
+			el.createEl("div", {text: snippetName});
 		}
 
 		// show path

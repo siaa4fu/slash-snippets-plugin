@@ -74,7 +74,7 @@ export default class SlashSnippetSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Show snippet content")
 			.addToggle((enable) => {
-				enable
+					enable
 					.setValue(this.plugin.settings.showFileContent)
 					.onChange(async (value) => {
 						this.plugin.settings.showFileContent = value;
@@ -94,6 +94,17 @@ export default class SlashSnippetSettingTab extends PluginSettingTab {
 					})
 			});
 
+		new Setting(containerEl)
+			.setName("Use relative paths for snippet search")
+			.setDesc("Search and display snippets using their path below the snippet folder, without the file extension. Disabled by default.")
+			.addToggle((enable) => {
+				enable
+					.setValue(this.plugin.settings.relativePathSearch)
+					.onChange(async (value) => {
+						this.plugin.settings.relativePathSearch = value;
+						await this.plugin.saveSettings();
+					})
+			});
 
 
 		new Setting(containerEl)
