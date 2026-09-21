@@ -229,7 +229,10 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 	// Renders each suggestion item.
 	async renderSuggestion(suggestion: SuggestionObject, el: HTMLElement) {
 		const file = this.plugin.app.vault.getFileByPath(suggestion.filePath);
-		if (!file) return
+		if (!file) {
+			el.remove();
+			return
+		}
 		const fileContent = await this.plugin.app.vault.cachedRead(file);
 
 		const pos = suggestion.positions;
