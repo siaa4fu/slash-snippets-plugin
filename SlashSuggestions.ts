@@ -182,64 +182,61 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 		return content;
 	}
 
-	public async selectSuggestion(suggestion: SuggestionObject, evt: MouseEvent) {
+	public async selectSuggestion(suggestion: SuggestionObject, _evt: MouseEvent) {
 		const context = this.context;
-		if (!context || !context.file || !context.editor) return;
+		if (!context?.file || !context?.editor) return;
 
+		const { file, editor } = context;
 		const snippetFile = this.plugin.app.vault.getFileByPath(suggestion.filePath);
-		if (!snippetFile) return;
-		const fileContent = await this.plugin.app.vault.cachedRead(snippetFile);
-		const originalContent = this.removeFrontmatter(fileContent);
+		if (!snippetFile) {
+			console.error(`Snippet file not found: ${suggestion.filePath}`);
+			return;
+		}
+		const snippetContent = await this.plugin.app.vault.cachedRead(snippetFile);
+		const snippetText = this.removeFrontmatter(snippetContent);
 
 		const cursorMarker = this.plugin.settings.cursorPositionString;
 		const selectionMarker = this.plugin.settings.textSelectionString;
-		const replacementText = this.plugin.selectedText || "";
+		const selectedText = this.plugin.selectedText || "";
+		const cursorMarkerIndex = snippetText.indexOf(cursorMarker);
+		const selectionMarkerIndex = snippetText.indexOf(selectionMarker);
 
 		// calculate the cursor position after marker replacement
 		let cursorOffset = -1;
-
-		const cursorMarkerPos = originalContent.indexOf(cursorMarker);
-		const selectionMarkerPos = originalContent.indexOf(selectionMarker);
-		if (cursorMarkerPos >= 0) {
-			cursorOffset = cursorMarkerPos;
-			// adjust the offset when replacing the selection marker shifts the cursor
-			if (selectionMarkerPos >= 0 && selectionMarkerPos < cursorMarkerPos) {
-				cursorOffset += replacementText.length - selectionMarker.length;
+		if (cursorMarkerIndex >= 0) {
+			cursorOffset = cursorMarkerIndex;
+			// account for the selected text replacing a selection marker before the cursor
+			if (selectionMarkerIndex >= 0 && selectionMarkerIndex < cursorMarkerIndex) {
+				cursorOffset += selectedText.length - selectionMarker.length;
 			}
-		} else if (selectionMarkerPos >= 0) {
-			// use the selection marker position when no cursor marker is present
-			cursorOffset = selectionMarkerPos;
+		} else if (selectionMarkerIndex >= 0) {
+			// place the cursor where the selection marker was when no cursor marker exists
+			cursorOffset = selectionMarkerIndex;
 		}
 
-		// remove the markers and insert the selected text
-		const snippetContent = originalContent
+		const insertedText = snippetText
 			.replace(cursorMarker, "")
-			.replace(selectionMarker, replacementText);
+			.replace(selectionMarker, selectedText);
 
+		editor.replaceRange(insertedText, context.start, context.end);
 		this.plugin.selectedText = "";
 
-		context.editor.replaceRange(
-			snippetContent,
-			context.start,
-			context.end
-		);
-
 		if (cursorOffset >= 0) {
-			// convert the text offset into the editor's line and character position
-			const textBeforeCursor = snippetContent.slice(0, cursorOffset);
+			// convert the character offset to the editor position after marker replacement
+			const textBeforeCursor = insertedText.slice(0, cursorOffset);
 			const lines = textBeforeCursor.split("\n");
-
-			context.editor.setCursor({
+			const lastLine = lines[lines.length - 1];
+			editor.setCursor({
 				line: context.start.line + lines.length - 1,
 				ch: lines.length === 1
-					? context.start.ch + lines[0].length
-					: lines[lines.length - 1].length
+					? context.start.ch + lastLine.length
+					: lastLine.length
 			});
 		}
 
 		// run templater
 		if (this.plugin.settings.templaterSupport) {
-			await this.plugin.runTemplaterReplace(context.file, context.editor);
+			await this.plugin.runTemplaterReplace(file, editor);
 		}
 
 		// update last used timestamp
