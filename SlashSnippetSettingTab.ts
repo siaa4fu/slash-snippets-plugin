@@ -94,6 +94,17 @@ export default class SlashSnippetSettingTab extends PluginSettingTab {
 					})
 			});
 
+		new Setting(containerEl)
+			.setName("Use relative paths")
+			.setDesc("Search and display snippets using paths relative to the snippet folder")
+			.addToggle((enable) => {
+				enable
+					.setValue(this.plugin.settings.relativePathSearch)
+					.onChange(async (value) => {
+						this.plugin.settings.relativePathSearch = value;
+						await this.plugin.saveSettings();
+					})
+			});
 
 
 		new Setting(containerEl)
