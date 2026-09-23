@@ -4,7 +4,8 @@ import {
 	EditorSuggest,
 	EditorSuggestContext,
 	EditorSuggestTriggerInfo,
-	TFile
+	TFile,
+	normalizePath
 } from "obsidian";
 import SlashSnippetPlugin, {SuggestionObject} from "./main";
 
@@ -19,10 +20,8 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 			return file.basename;
 		}
 
-		const snippetPath = this.plugin.settings.snippetPath
-			.replace(/\\/g, "/")
-			.replace(/^\/+|\/+$/g, "");
-		const filePath = file.path.replace(/\\/g, "/");
+		const snippetPath = normalizePath(this.plugin.settings.snippetPath);
+		const filePath = normalizePath(file.path);
 		const prefix = snippetPath ? `${snippetPath}/` : "";
 		const relativePath = filePath.startsWith(prefix)
 			? filePath.slice(prefix.length)
