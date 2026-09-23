@@ -184,11 +184,11 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 
 	public async selectSuggestion(suggestion: SuggestionObject, evt: MouseEvent) {
 		const context = this.context;
-		if (!context) return;
+		if (!context || !context.file || !context.editor) return;
 
-		const file = this.plugin.app.vault.getFileByPath(suggestion.filePath);
-		if (!file) return;
-		const fileContent = await this.plugin.app.vault.cachedRead(file);
+		const snippetFile = this.plugin.app.vault.getFileByPath(suggestion.filePath);
+		if (!snippetFile) return;
+		const fileContent = await this.plugin.app.vault.cachedRead(snippetFile);
 		const originalContent = this.removeFrontmatter(fileContent);
 
 		const cursorMarker = this.plugin.settings.cursorPositionString;
@@ -239,7 +239,7 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 
 		// run templater
 		if (this.plugin.settings.templaterSupport) {
-			await this.plugin.runTemplaterReplace();
+			await this.plugin.runTemplaterReplace(context.file, context.editor);
 		}
 
 		// update last used timestamp

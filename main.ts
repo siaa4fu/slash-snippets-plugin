@@ -1,4 +1,4 @@
-import {debounce, Plugin, TFile,} from "obsidian";
+import {Editor, Plugin, TFile,} from "obsidian";
 import {EditorView, ViewUpdate} from "@codemirror/view";
 import SlashSnippetSettingTab from "./SlashSnippetSettingTab";
 import SlashSuggestions from "./SlashSuggestions";
@@ -135,18 +135,15 @@ export default class SlashSnippetPlugin extends Plugin {
 	}
 
 
-	public async runTemplaterReplace() {
+	public async runTemplaterReplace(file: TFile, editor: Editor) {
 		const templaterReplaceCommandId = "templater-obsidian:replace-in-file-templater";
-		const saveCommandId = "editor:save-file";
 
-		(this.app as any).commands.executeCommandById(saveCommandId);
+		// avoid the "editor:save-file" command because save hooks may modify the editor content
+		const editorContent = editor.getValue();
+		await this.app.vault.modify(file, editorContent);
 
-		const delayTemplateReplaceRun = debounce(() => {
-			(this.app as any).commands.executeCommandById(templaterReplaceCommandId);
-		}, 300, true)
-
-		delayTemplateReplaceRun()
-
+		// Templater reads and replaces the active file through the Vault
+		(this.app as any).commands.executeCommandById(templaterReplaceCommandId);
 	}
 
 
