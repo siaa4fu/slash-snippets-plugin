@@ -107,8 +107,11 @@ export default class SlashSnippetPlugin extends Plugin {
 
 	listenForUpdates() {
 		this.registerEvent(this.app.vault.on('create', (file) => {
-			if (file.path.startsWith(`${this.settings.snippetPath}/`)) {
-				this.snippetFiles.push(file as TFile);
+			if (
+				file instanceof TFile &&
+				file.path.startsWith(`${this.settings.snippetPath}/`)
+			) {
+				this.snippetFiles.push(file);
 
 				const oldScore = localStorage.getItem(file.path);
 				if (!oldScore) {
@@ -120,8 +123,11 @@ export default class SlashSnippetPlugin extends Plugin {
 		}));
 
 		this.registerEvent(this.app.vault.on('delete', (file) => {
-			if (file.path.startsWith(`${this.settings.snippetPath}/`)) {
-				this.snippetFiles.remove(file as TFile);
+			if (
+				file instanceof TFile &&
+				file.path.startsWith(`${this.settings.snippetPath}/`)
+			) {
+				this.snippetFiles.remove(file);
 				// remove score
 				localStorage.removeItem(file.path);
 			}
