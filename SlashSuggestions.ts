@@ -13,7 +13,7 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 	private plugin: SlashSnippetPlugin;
 	private DEFAULT_SCORE = 1;
 	private START_WITH_SCORE = 2;
-	private activeTriggerStart: number | null = null;
+	private activeTrigger: { line: number; ch: number } | null = null;
 
 	private getSnippetName(file: TFile): string {
 		if (!this.plugin.settings.relativePathSearch) {
@@ -133,32 +133,36 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 
 		// keep the existing trigger active while editing its query
 		if (
-			this.activeTriggerStart !== null &&
-			this.activeTriggerStart < cursor.ch &&
-			textBeforeCursor[this.activeTriggerStart] === trigger
+			this.activeTrigger !== null &&
+			this.activeTrigger.line === cursor.line &&
+			this.activeTrigger.ch < cursor.ch &&
+			textBeforeCursor[this.activeTrigger.ch] === trigger
 		) {
 			return {
 				start: {
 					...cursor,
-					ch: this.activeTriggerStart
+					ch: this.activeTrigger.ch
 				},
 				end: cursor,
-				query: textBeforeCursor.slice(this.activeTriggerStart + 1)
+				query: textBeforeCursor.slice(this.activeTrigger.ch + 1)
 			};
 		}
 
-		this.activeTriggerStart = null;
+		this.activeTrigger = null;
 
 		// start a new trigger only when the trigger character was just entered
 		if (
 			cursor.ch > 0 &&
 			textBeforeCursor[cursor.ch - 1] === trigger
 		) {
-			this.activeTriggerStart = cursor.ch - 1;
+			this.activeTrigger = {
+				line: cursor.line,
+				ch: cursor.ch - 1
+			};
 			return {
 				start: {
 					...cursor,
-					ch: this.activeTriggerStart
+					ch: this.activeTrigger.ch
 				},
 				end: cursor,
 				query: ""
@@ -218,7 +222,6 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 			.replace(selectionMarker, selectedText);
 
 		editor.replaceRange(insertedText, context.start, context.end);
-		this.plugin.selectedText = "";
 
 		if (cursorOffset >= 0) {
 			// convert the character offset to the editor position after marker replacement
@@ -245,6 +248,7 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 
 	public close(): void {
 		this.activeTriggerStart = null;
+		this.plugin.selectedText = "";
 		super.close();
 	}
 
