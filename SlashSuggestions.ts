@@ -209,7 +209,6 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 		} else {
 			snippetContent = snippetContent.replace(this.plugin.settings.textSelectionString, "");
 		}
-		this.plugin.selectedText = "";
 		//
 		this.context?.editor.replaceRange(
 			snippetContent,
