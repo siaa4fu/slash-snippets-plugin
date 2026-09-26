@@ -242,6 +242,7 @@ export default class SlashSuggestions extends EditorSuggest<SuggestionObject> {
 
 	public close(): void {
 		this.activeTriggerStart = null;
+		this.plugin.selectedText = "";
 		super.close();
 	}
 
